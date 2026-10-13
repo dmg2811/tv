@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Diagnóstico de Smart TV</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<style>
+  /* Sin variables CSS, flex ni grid: esta página también debe abrir en TV antiguas. */
+  html, body { margin: 0; padding: 0; background: #101418; color: #eee; }
+  body { font: 22px/1.4 Arial, Helvetica, sans-serif; padding: 18px 24px 60px; }
+  h1 { margin: 0 0 6px; font-size: 1.5em; }
+  h2 { margin: 1.3em 0 0.3em; font-size: 1.15em; color: #f5c518; border-bottom: 2px solid #333; padding-bottom: 4px; }
+  p, li { color: #bbb; margin: 0.3em 0; }
+  a { color: #8cf; }
+  button { font: inherit; font-weight: bold; margin: 0.25em 0.3em 0.25em 0; padding: 0.4em 0.9em; color: #fff; background: #26456e; border: 3px solid #26456e; border-radius: 8px; cursor: pointer; }
+  button:focus { border-color: #fff; outline: none; }
+  button.go { background: #1d6b36; border-color: #1d6b36; }
+  button.go:focus { border-color: #fff; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 4px 8px; border-bottom: 1px solid #2a3038; vertical-align: top; word-wrap: break-word; }
+  td.k { width: 36%; color: #ccc; }
+  td.s { width: 9%; font-weight: bold; white-space: nowrap; }
+  .ok { color: #5fe37a; } .fail { color: #ff6b6b; } .warn { color: #ffb84d; } .info { color: #8ec8ff; } .run { color: #999; }
+  /* Fijo y siempre a la vista: Chrome pausa/ahoga los videos mudos que quedan fuera de la zona visible
+     y eso falsearía las pruebas de reproducción y de caché. */
+  #videoBox { position: fixed; right: 10px; top: 10px; z-index: 30; background: #000; border: 2px solid #555; padding: 0; }
+  #videoBox video { display: block; width: 90px; height: 160px; background: #000; }
+  pre { white-space: pre-wrap; word-wrap: break-word; font: 14px/1.3 Consolas, monospace; background: #0a0d10; color: #9ad; padding: 8px; max-height: 260px; overflow: hidden; }
+  #keyLast { font: 20px/1.4 Consolas, monospace; background: #0a0d10; padding: 8px 12px; min-height: 2.8em; color: #fff; }
+  .box { background: #181e25; border: 1px solid #2d3641; border-radius: 8px; padding: 8px 14px; margin: 8px 0; }
+
+  /* Superposición de prueba de rotación */
+  #rot { display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; z-index: 50; overflow: hidden; }
+  #rotScreen { position: absolute; background: #111; overflow: hidden; -webkit-transform-origin: 50% 50%; transform-origin: 50% 50%; }
+  #rotStage { position: absolute; background: #000; overflow: hidden; border: 0; }
+  #rotStage video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
+  .rt { position: absolute; z-index: 3; font: bold 1.1em Arial; color: #fff; background: #c00; padding: 0.15em 0.5em; }
+  #rtTop { top: 0; left: 50%; margin-left: -4em; width: 8em; text-align: center; }
+  #rtBottom { bottom: 0; left: 50%; margin-left: -4em; width: 8em; text-align: center; background: #07c; }
+  #rtLeft { left: 0; top: 50%; background: #070; }
+  #rtRight { right: 0; top: 50%; background: #707; }
+  #rotHelp { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 0.5em 1em; font: 0.8em/1.35 Arial; background: rgba(0,0,0,0.85); color: #fff; text-align: center; }
+  #rotHelp button { font-size: 1em; padding: 0.2em 0.6em; margin: 0.15em; }
+</style>
+</head>
+<body>
+<h1>Diagnóstico de Smart TV</h1>
+<p>Use las flechas y OK del control remoto (o el puntero) para pulsar los botones. Los resultados se van completando abajo. Al terminar pulse <b>Enviar informe al servidor</b>.</p>
+
+<div class="box">
+  <button class="go" id="btnAll" type="button">Repetir pruebas automáticas</button>
+  <button id="btnSend" type="button">Enviar informe al servidor</button>
+  <span id="sendResult" class="info"></span>
+</div>
+
+<div id="videoBox"></div>
+<div id="content"></div>
+
+<h2>Pruebas manuales</h2>
+<div class="box">
+  <p><b>1. Reproducción real</b> (video 720x1280 H.264 Main 3.1 + AAC, el mismo formato de producción)</p>
+  <button id="btnPlay" type="button">Probar reproducción</button>
+  <button id="btnSound" type="button">Probar sonido (¿se oye un tono?)</button>
+  <span id="soundAsk" style="display:none"><button id="soundYes" type="button">Sí se oyó</button><button id="soundNo" type="button">No se oyó</button></span>
+</div>
+<div class="box">
+  <p><b>2. Rotación de pantalla</b>: gira un video y textos como lo hace el reproductor. Compare el texto del video con los rótulos de colores.</p>
+  <button id="btnRot" type="button">Abrir prueba de rotación</button>
+</div>
+<div class="box">
+  <p><b>3. Caché de video</b> (¿la TV vuelve a descargar un video ya visto?). Requiere el servidor LAN (<code>npm run lan</code>).</p>
+  <button id="btnCache3" type="button">Prueba corta (3 MB, ~40 s)</button>
+  <button id="btnCache20" type="button">Prueba larga (20 MB, ~2 min)</button>
+  <button id="btnReplay" type="button">Reproducir de nuevo (hágalo con el servidor caído)</button>
+</div>
+<div class="box">
+  <p><b>4. Control remoto</b>: pulse cada botón; se marcan abajo. Las teclas que el sistema de la TV reserva (inicio, volumen...) pueden no llegar a la página.</p>
+  <div id="keyLast">(pulse una tecla)</div>
+</div>
+
+<h2>Informe</h2>
+<pre id="reportText">(se genera al terminar las pruebas)</pre>
+
+<div id="rot">
+  <div id="rotScreen">
+    <div id="rotStage">
+      <video id="rotVideo" muted loop playsinline webkit-playsinline preload="auto"></video>
+      <div class="rt" id="rtTop">ARRIBA (html)</div>
+      <div class="rt" id="rtBottom">ABAJO (html)</div>
+      <div class="rt" id="rtLeft">IZQ</div>
+      <div class="rt" id="rtRight">DER</div>
+    </div>
+    <div id="rotHelp">
+      <div id="rotInfo"></div>
+      <button type="button" id="rotPrev">&lt; Ángulo</button>
+      <button type="button" id="rotNext">Ángulo &gt;</button>
+      <button type="button" id="rotYes">COINCIDE (OK)</button>
+      <button type="button" id="rotNo">NO COINCIDE</button>
+      <button type="button" id="rotClose">Cerrar (Atrás)</button>
+      <div>Teclas: ← → cambia ángulo · OK = coincide · ↓ = no coincide · Atrás/Esc = cerrar</div>
+    </div>
+  </div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/rotation.js"></script>
+<script src="js/diag.js"></script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+/* Sin variables CSS, flex, grid, gap ni inset: compatibilidad con navegadores de TV antiguos.
+ * Tamaños en em: la letra base (font-size de #screen) la fija el JS según el tamaño lógico. */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #fff;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body.hide-cursor, body.hide-cursor * { cursor: none; }
+
+#screen {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  background: #000;
+  -webkit-transform-origin: 50% 50%;
+  -ms-transform-origin: 50% 50%;
+  transform-origin: 50% 50%;
+}
+
+#stage {
+  position: absolute;
+  overflow: hidden;
+  background: #000;
+  z-index: 1;
+}
+
+.layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #000;
+  visibility: hidden;
+  -o-object-fit: contain;
+  object-fit: contain;
+}
+
+#msg, #hint, #hud, #controls { display: none; }
+#msg.on, #hint.on { display: block; }
+#hud.on { display: block; }
+#controls.on { display: block; }
+
+#msg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 42%;
+  z-index: 5;
+  padding: 0 6%;
+  text-align: center;
+  font-size: 1.5em;
+  line-height: 1.35;
+  white-space: pre-line;
+  color: #ddd;
+}
+
+#hint {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 3%;
+  z-index: 6;
+  padding: 0.4em 0.8em;
+  text-align: center;
+  font-size: 1em;
+  background: rgba(0, 0, 0, 0.75);
+  border: 0.1em solid #f5b700;
+  color: #f5b700;
+}
+
+#hud {
+  position: absolute;
+  left: 1%;
+  top: 1%;
+  z-index: 8;
+  margin: 0;
+  padding: 0.3em 0.6em;
+  max-width: 96%;
+  overflow: hidden;
+  font: 0.55em/1.35 Consolas, "Courier New", monospace;
+  white-space: pre;
+  color: #3f3;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+#controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4%;
+  z-index: 9;
+  padding: 0 2%;
+  text-align: center;
+}
+
+#controls button {
+  display: inline-block;
+  margin: 0.2em 0.25em;
+  padding: 0.45em 0.9em;
+  font: inherit;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #fff;
+  background: rgba(20, 20, 20, 0.88);
+  border: 0.12em solid #777;
+  -webkit-border-radius: 0.35em;
+  border-radius: 0.35em;
+  outline: none;
+}
+
+#controls button.focus {
+  color: #000;
+  background: #fff;
+  border-color: #fff;
+}
