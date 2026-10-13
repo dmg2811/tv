@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "epoch": 0,
+  "version": 1,
+  "publishedAt": "2026-10-13T21:51:11.662Z",
+  "playerBuild": "771d75ffd4",
+  "mediaBase": "media/",
+  "settings": {
+    "defaultImageSeconds": 10,
+    "pollSeconds": 60,
+    "stageAspect": "9:16"
+  },
+  "items": [
+    {
+      "id": "5ec6d9fb0203",
+      "type": "image",
+      "url": "5ec6d9fb0203-d0254a00.jpg",
+      "order": 0,
+      "size": 128825,
+      "status": "active",
+      "durationSec": 10
+    },
+    {
+      "id": "d4032bbdc0a8",
+      "type": "image",
+      "url": "d4032bbdc0a8-7a48aadd.jpg",
+      "order": 1,
+      "size": 129236,
+      "status": "active",
+      "durationSec": 10
+    },
+    {
+      "id": "f8a5786be48f",
+      "type": "video",
+      "url": "f8a5786be48f-d4d20dec.mp4",
+      "order": 2,
+      "size": 477102,
+      "status": "active",
+      "fallback": {
+        "url": "f8a5786be48f-p7a869c81.jpg",
+        "durationSec": 5
+      }
+    },
+    {
+      "id": "1bbf77978c67",
+      "type": "image",
+      "url": "1bbf77978c67-59799c50.jpg",
+      "order": 3,
+      "size": 128511,
+      "status": "active",
+      "durationSec": 10
+    },
+    {
+      "id": "60233f5f901e",
+      "type": "video",
+      "url": "60233f5f901e-e162672f.mp4",
+      "order": 4,
+      "size": 480693,
+      "status": "active",
+      "fallback": {
+        "url": "60233f5f901e-pa5afc707.jpg",
+        "durationSec": 5
+      }
+    }
+  ]
+}
