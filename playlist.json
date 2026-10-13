@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "epoch": 0,
-  "version": 2,
-  "publishedAt": "2026-10-13T21:55:57.794Z",
+  "version": 3,
+  "publishedAt": "2026-10-13T22:09:51.153Z",
   "playerBuild": "771d75ffd4",
   "mediaBase": "media/",
   "settings": {
@@ -62,6 +62,18 @@
       "status": "active",
       "fallback": {
         "url": "e5e3fe2b27c2-p11be352c.jpg",
+        "durationSec": 5
+      }
+    },
+    {
+      "id": "e4141315e6cd",
+      "type": "video",
+      "url": "e4141315e6cd-aa80a278.mp4",
+      "order": 5,
+      "size": 2474032,
+      "status": "active",
+      "fallback": {
+        "url": "e4141315e6cd-p20b4e472.jpg",
         "durationSec": 5
       }
     }
