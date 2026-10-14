@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "epoch": 0,
-  "version": 6,
-  "publishedAt": "2026-10-14T16:21:53.164Z",
+  "version": 7,
+  "publishedAt": "2026-10-14T17:38:38.207Z",
   "playerBuild": "5a1978f0ad",
   "mediaBase": "media/",
   "settings": {
@@ -12,74 +12,14 @@
   },
   "items": [
     {
-      "id": "e4141315e6cd",
+      "id": "166991b872ac",
       "type": "video",
-      "url": "e4141315e6cd-aa80a278.mp4",
+      "url": "166991b872ac-4d603bd2.mp4",
       "order": 0,
-      "size": 2474032,
+      "size": 1395342,
       "status": "active",
       "fallback": {
-        "url": "e4141315e6cd-p20b4e472.jpg",
-        "durationSec": 5
-      }
-    },
-    {
-      "id": "cf309e81f83d",
-      "type": "video",
-      "url": "cf309e81f83d-2a6bc2e6.mp4",
-      "order": 1,
-      "size": 2336427,
-      "status": "active",
-      "fallback": {
-        "url": "cf309e81f83d-pe9761ab3.jpg",
-        "durationSec": 5
-      }
-    },
-    {
-      "id": "ca13a549d10c",
-      "type": "video",
-      "url": "ca13a549d10c-6f642aa0.mp4",
-      "order": 2,
-      "size": 3387620,
-      "status": "active",
-      "fallback": {
-        "url": "ca13a549d10c-pdb2b0e25.jpg",
-        "durationSec": 5
-      }
-    },
-    {
-      "id": "1b1ead1488ad",
-      "type": "video",
-      "url": "1b1ead1488ad-05e1b26d.mp4",
-      "order": 3,
-      "size": 3342591,
-      "status": "active",
-      "fallback": {
-        "url": "1b1ead1488ad-p83adaea4.jpg",
-        "durationSec": 5
-      }
-    },
-    {
-      "id": "bb8d917c175c",
-      "type": "video",
-      "url": "bb8d917c175c-2da8a809.mp4",
-      "order": 4,
-      "size": 3544666,
-      "status": "active",
-      "fallback": {
-        "url": "bb8d917c175c-p1c03f828.jpg",
-        "durationSec": 5
-      }
-    },
-    {
-      "id": "c8ff91a8eb07",
-      "type": "video",
-      "url": "c8ff91a8eb07-3f9f466e.mp4",
-      "order": 5,
-      "size": 2463747,
-      "status": "active",
-      "fallback": {
-        "url": "c8ff91a8eb07-p80be270b.jpg",
+        "url": "166991b872ac-pf183c1d7.jpg",
         "durationSec": 5
       }
     }
