@@ -9,6 +9,7 @@
  *   1  NORMAL    720x1280 (vertical) con giro CSS: es lo que hace hoy el reproductor.
  *   2  GIRADO    1280x720 con los píxeles girados 270 grados, SIN giro CSS, ocupando todo el viewport (16:9).
  *   3  GIRADO    1280x720 con los píxeles girados 90 grados, SIN giro CSS, ocupando todo el viewport (16:9).
+ *   4  ANUNCIO REAL «ultra» (original vertical 1080x1920) convertido a 1280x720 girado 270 grados, mismo método que el 2.
  *
  * Para volver al funcionamiento normal: tecla 0 (o botón SALIR) o Atrás (abre ?normal=1), o restaurar el reproductor.
  * Para borrar esta prueba del todo: ver docs/PRUEBA-VIDEO-GIRADO.md. */
@@ -22,9 +23,10 @@
   var MODES = {
     1: { file: 'video-a-720x1280.mp4', short: 'NORMAL', name: 'NORMAL 720x1280 con giro CSS (como hoy)', css: true },
     2: { file: 'video-a-r270.mp4', short: 'GIRADO 270°', name: 'GIRADO 270° 1280x720 sin giro CSS', css: false },
-    3: { file: 'video-a-r90.mp4', short: 'GIRADO 90°', name: 'GIRADO 90° 1280x720 sin giro CSS', css: false }
+    3: { file: 'video-a-r90.mp4', short: 'GIRADO 90°', name: 'GIRADO 90° 1280x720 sin giro CSS', css: false },
+    4: { file: 'ultra-r270.mp4', short: 'ANUNCIO REAL 270°', name: 'ANUNCIO REAL «ultra» GIRADO 270° 1280x720 sin giro CSS', css: false }
   };
-  var KEY_MODE = { 49: 1, 50: 2, 51: 3, 97: 1, 98: 2, 99: 3 };
+  var KEY_MODE = { 49: 1, 50: 2, 51: 3, 52: 4, 97: 1, 98: 2, 99: 3, 100: 4 };
   var EXIT_KEYS = { 48: 1, 96: 1, 27: 1, 8: 1, 10009: 1, 461: 1 };
 
   function byId(id) {
@@ -81,8 +83,8 @@
       var tvid = global.document.createElement('video');    /* solo existe en la prueba: uso normal = un único <video> */
       var panel = byId('vtest');
       var cssVid = renderer.video;
-      var buttons = { 1: byId('vt-1'), 2: byId('vt-2'), 3: byId('vt-3'), rot: byId('vt-rot'), exit: byId('vt-0') };
-      var order = ['1', '2', '3', 'rot', 'exit'];
+      var buttons = { 1: byId('vt-1'), 2: byId('vt-2'), 3: byId('vt-3'), 4: byId('vt-4'), rot: byId('vt-rot'), exit: byId('vt-0') };
+      var order = ['1', '2', '3', '4', 'rot', 'exit'];
       var state = { mode: 0, focus: 0, hideAt: 0, sticky: true, lastX: null, lastY: null, bootAt: util.now(), box: null, reloadChecks: 0 };
       var i;
 

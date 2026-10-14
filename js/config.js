@@ -13,7 +13,7 @@
  *   hide=N           segundos hasta ocultar los controles (4)
  *   controls=0       nunca mostrar los botones en pantalla (las teclas del control siguen funcionando)
  *   uirotate=0|90|180|270   gira los controles aparte del escenario (por defecto igual que rotate)
- *   prueba=video     TEMPORAL: prueba de formatos de video en TV vertical (modo=1|2|3; o teclas 1, 2 y 3).
+ *   prueba=video     TEMPORAL: prueba de formatos de video en TV vertical (modo=1|2|3|4; o teclas 1 a 4).
  *                    En la URL pública de GitHub Pages la prueba se abre SOLA, sin parámetros.
  *   normal=1         TEMPORAL: abre el reproductor normal (programación) en vez de la prueba
  *   viewport=WxH     fuerza el tamaño de pantalla (p. ej. 1920x1080) si el navegador de la TV informa mal
@@ -109,7 +109,7 @@
         prueba: q.prueba === 'video',
         normal: q.normal === '1',
         vcheckMs: num(q, 'vcheck', 60, 1, 3600) * 1000,
-        modo: Math.floor(num(q, 'modo', 1, 1, 3)),
+        modo: Math.floor(num(q, 'modo', 1, 1, 4)),
         wantSound: q.mute === '0',
         tickMs: d.tickMs
       };
