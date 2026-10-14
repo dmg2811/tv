@@ -21,7 +21,17 @@
     var hooks, last, saved, res;
 
     SP.log.setEcho(cfg.debug);
-    renderer.rotation = cfg.rotate !== null ? cfg.rotate : SP.rotation.normalize(storedRot);
+    renderer.viewportOverride = cfg.viewport;
+    renderer.uiRotate = cfg.uiRotate;
+    /* Prioridad: ?rotate= de la URL > elección guardada con ROTAR > valor por defecto del manifiesto >
+     * automática (90 en pantalla horizontal, que es una TV instalada en vertical; 0 en pantalla vertical). */
+    if (cfg.rotate !== null) {
+      renderer.rotation = cfg.rotate;
+    } else if (storedRot !== null) {
+      renderer.rotation = SP.rotation.normalize(storedRot);
+    } else {
+      renderer.autoRotation = true;
+    }
     renderer.init();
     renderer.message('Cargando…');
 

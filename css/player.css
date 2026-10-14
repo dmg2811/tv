@@ -22,8 +22,23 @@ body.hide-cursor, body.hide-cursor * { cursor: none; }
   position: absolute;
   left: 0;
   top: 0;
+  z-index: 1;
   overflow: hidden;
   background: #000;
+  -webkit-transform-origin: 50% 50%;
+  -ms-transform-origin: 50% 50%;
+  transform-origin: 50% 50%;
+}
+
+/* Capa de controles, mensajes y HUD: transparente, encima del escenario y con su propia rotación
+ * (el JS le da el mismo giro que al escenario salvo que se use ?uirotate=). */
+#ui {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  overflow: hidden;
+  background: transparent;
   -webkit-transform-origin: 50% 50%;
   -ms-transform-origin: 50% 50%;
   transform-origin: 50% 50%;

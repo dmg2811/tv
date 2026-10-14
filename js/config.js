@@ -2,14 +2,18 @@
  *
  * Parámetros (todos opcionales; los tiempos son en SEGUNDOS):
  *   playlist=URL     manifiesto (por defecto playlist.json junto a index.html)
- *   rotate=0|90|180|270   rotación de pantalla de ESTA tv (gana sobre lo guardado)
+ *   rotate=0|90|180|270   rotación de pantalla de ESTA tv (gana sobre lo guardado). Sin él ni valor guardado:
+ *                    90 en una pantalla horizontal (TV instalada en vertical) y 0 en una vertical
  *   mute=0|1         sonido solicitado al arrancar (requiere gesto del usuario)
  *   poll=N           intervalo de consulta del manifiesto (por defecto 60)
  *   loadTimeout=N    tiempo máximo para empezar a reproducir un elemento (20)
  *   stall=N          tiempo sin avance de video antes de considerarlo trabado (10)
  *   retries=N        reintentos por elemento antes de saltarlo (1)
  *   retryDelay=N     espera entre reintentos (1)
- *   hide=N           segundos hasta ocultar los controles (5)
+ *   hide=N           segundos hasta ocultar los controles (4)
+ *   controls=0       nunca mostrar los botones en pantalla (las teclas del control siguen funcionando)
+ *   uirotate=0|90|180|270   gira los controles aparte del escenario (por defecto igual que rotate)
+ *   viewport=WxH     fuerza el tamaño de pantalla (p. ej. 1920x1080) si el navegador de la TV informa mal
  *   backoff=a,b,c    esperas de recuperación cuando todo falla (10,20,40,60,120,300)
  *   preload=image|none   precarga del siguiente elemento (image)
  *   verify=0|1       comprobar con HEAD los medios nuevos antes de aplicar (1)
@@ -48,7 +52,7 @@
       stallSec: 10,
       retries: 1,
       retryDelaySec: 1,
-      hideSec: 5,
+      hideSec: 4,
       backoffSec: [10, 20, 40, 60, 120, 300],
       defaultImageSec: 10,
       preload: 'image',
@@ -63,6 +67,16 @@
       var rotate = null;
       if (q.rotate !== undefined && q.rotate !== '') {
         rotate = SP.rotation ? SP.rotation.normalize(q.rotate) : parseInt(q.rotate, 10) || 0;
+      }
+      var uiRotate = null;
+      var viewport = null;
+      var vm = /^\s*(\d{3,5})\s*[x\u00d7]\s*(\d{3,5})\s*$/.exec(q.viewport || '');
+      if (q.uirotate !== undefined && q.uirotate !== '') {
+        uiRotate = SP.rotation ? SP.rotation.normalize(q.uirotate) : parseInt(q.uirotate, 10) || 0;
+      }
+      if (vm) {
+        viewport = { w: parseInt(vm[1], 10), h: parseInt(vm[2], 10) };
+        if (viewport.w < 200 || viewport.h < 200 || viewport.w > 10000 || viewport.h > 10000) { viewport = null; }
       }
       return {
         playlistUrl: q.playlist || d.playlistUrl,
@@ -85,6 +99,9 @@
         debug: q.debug === '1',
         tv: q.tv || '',
         rotate: rotate,
+        uiRotate: uiRotate,
+        viewport: viewport,
+        controls: q.controls !== '0',
         wantSound: q.mute === '0',
         tickMs: d.tickMs
       };

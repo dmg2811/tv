@@ -30,6 +30,29 @@
       return (SP.rotation.normalize(deg) + 90) % 360;
     },
 
+    /* Una pantalla horizontal (ancho >= alto) solo aprovecha el escenario 9:16 con 90 o 270; una vertical,
+     * con 0 o 180. Los otros dos ángulos dejan una franja del 32 % de la pantalla: son válidos por URL,
+     * pero nunca se ofrecen al alternar con el botón ROTAR. */
+    fitAngles: function (vw, vh) {
+      return vw >= vh ? [90, 270] : [0, 180];
+    },
+
+    /* Rotación cuando nadie ha configurado nada: el giro que ya aprovecha toda la pantalla.
+     * TV horizontal montada en vertical -> 90. Si la propia TV ya gira la imagen (navegador vertical) -> 0. */
+    defaultFor: function (vw, vh) {
+      return vw >= vh ? 90 : 0;
+    },
+
+    /* Siguiente ángulo "útil" para el botón ROTAR: alterna entre los dos que llenan la pantalla.
+     * Si el actual no es uno de ellos (p. ej. 0 por URL en una pantalla horizontal), salta al primero. */
+    nextFit: function (deg, vw, vh) {
+      var fit = SP.rotation.fitAngles(vw, vh);
+      var d = SP.rotation.normalize(deg);
+      if (d === fit[0]) { return fit[1]; }
+      if (d === fit[1]) { return fit[0]; }
+      return fit[0];
+    },
+
     /* "9:16" | "9/16" | 0.5625 -> número (ancho/alto). Valor inválido -> 9/16. */
     parseAspect: function (value) {
       var m, a;
@@ -61,6 +84,10 @@
       }
       sw = even(sw);
       sh = even(sh);
+      /* El redondeo a par puede dejar 1-3 px sin cubrir (p. ej. 1366x768 -> 1364x768): se ajusta al borde,
+       * una deformación de menos de 0,3 % que no se aprecia y evita las franjas negras. */
+      if (lh - sh >= 0 && lh - sh <= 3) { sh = lh; }
+      if (lw - sw >= 0 && lw - sw <= 3) { sw = lw; }
 
       return {
         rotation: rot,

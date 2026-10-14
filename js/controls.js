@@ -34,7 +34,11 @@
     this.order = ['prev', 'pause', 'next', 'rotate', 'fullscreen', 'sound'];
     this.focusIdx = 1;
     this.visible = false;
+    this.enabled = !cfg || cfg.controls !== false;   /* ?controls=0: los botones nunca se muestran */
     this.hideAtMs = 0;
+    this.bootAt = util.now();
+    this.lastX = null;
+    this.lastY = null;
     this.onRotate = null;
     this.onToggleHud = null;
     this.onGesture = null;
@@ -78,20 +82,44 @@
     if (this.focusIdx >= this.order.length) { this.focusIdx = 0; }
 
     util.on(global.document, 'keydown', function (e) { self.onKey(e || global.event); });
-    util.on(global.document, 'mousemove', function () { self.onPointer(); });
+    util.on(global.document, 'mousemove', function (e) { self.onPointerMove(e || global.event); });
     util.on(global.document, 'touchstart', function () { self.onPointer(true); });
     util.on(global.document, 'click', function () { if (self.onGesture) { self.onGesture(); } });
     this.refresh();
   };
 
-  /* Movimiento del puntero (magic remote, mouse): muestra los controles y el cursor. */
+  /* Movimiento del puntero: solo cuenta si es REAL. Muchas TV disparan "mousemove" sintéticos (al cambiar el
+   * diseño, al ocultar el cursor...) con las mismas coordenadas, o con una vibración de un píxel: con eso los
+   * botones aparecerían solos y no se irían nunca. Se exige un desplazamiento de al menos 6 px. El primer
+   * evento tras arrancar solo fija la referencia. */
+  Controls.prototype.onPointerMove = function (e) {
+    var x = e ? e.clientX : undefined;
+    var y = e ? e.clientY : undefined;
+    var dx, dy;
+    if (typeof x !== 'number' || typeof y !== 'number') { this.onPointer(); return; }
+    if (this.lastX === null) {
+      this.lastX = x;
+      this.lastY = y;
+      if (util.now() - this.bootAt < 2500) { return; }
+    }
+    dx = x - this.lastX;
+    dy = y - this.lastY;
+    if (dx * dx + dy * dy < 36) { return; }
+    this.lastX = x;
+    this.lastY = y;
+    this.onPointer();
+  };
+
+  /* Movimiento real del puntero (magic remote, mouse) o toque: muestra los controles y el cursor. */
   Controls.prototype.onPointer = function (fromTouch) {
     if (this.onGesture && fromTouch) { this.onGesture(); }
+    if (!this.enabled) { return; }
     util.removeClass(global.document.body, 'hide-cursor');
     this.show();
   };
 
   Controls.prototype.show = function () {
+    if (!this.enabled) { return; }
     this.visible = true;
     this.touch();
     util.addClass(this.root, 'on');
@@ -113,12 +141,19 @@
     if (this.visible && nowMs >= this.hideAtMs) { this.hide(); }
   };
 
+  /* ROTAR alterna solo entre los dos ángulos que llenan la pantalla (90 <-> 270 en una pantalla horizontal,
+   * 0 <-> 180 en una vertical); los demás se pueden fijar por URL. */
+  Controls.prototype.nextRotation = function () {
+    var vp = this.renderer.viewportSize();
+    return SP.rotation.nextFit(this.renderer.rotation, vp.w, vp.h);
+  };
+
   Controls.prototype.refresh = function () {
     var st = this.engine.getState();
     var name, i, focused;
     util.setText(this.buttons.pause, st.paused ? 'REANUDAR' : 'PAUSA');
     util.setText(this.buttons.sound, 'SONIDO: ' + (st.soundOn ? 'SÍ' : 'NO'));
-    util.setText(this.buttons.rotate, 'ROTAR ' + this.renderer.rotation + '°');
+    util.setText(this.buttons.rotate, 'ROTAR A ' + this.nextRotation() + '°');
     util.setText(this.buttons.fullscreen, this.isFullscreen() ? 'SALIR PANT. COMPLETA' : 'PANTALLA COMPLETA');
     for (i = 0; i < this.order.length; i++) {
       name = this.order[i];
@@ -135,7 +170,7 @@
       case 'pause': this.engine.togglePause(); break;
       case 'sound': this.engine.toggleSound(); break;
       case 'rotate':
-        if (this.onRotate) { this.onRotate(SP.rotation.next(this.renderer.rotation)); }
+        if (this.onRotate) { this.onRotate(this.nextRotation()); }
         break;
       case 'fullscreen':
         api = this.fullscreenApi();
@@ -175,7 +210,7 @@
       case KEYS.RW:
       case KEYS.MEDIA_PREV: engine.prev(); break;
       case KEYS.RED:
-      case KEYS.N_R: if (this.onRotate) { this.onRotate(SP.rotation.next(this.renderer.rotation)); } break;
+      case KEYS.N_R: if (this.onRotate) { this.onRotate(this.nextRotation()); } break;
       case KEYS.GREEN:
       case KEYS.N_M: engine.toggleSound(); break;
       case KEYS.YELLOW:
@@ -219,6 +254,7 @@
         case KEYS.SPACE: engine.togglePause(); break;
         case KEYS.ENTER:
         case KEYS.UP:
+          if (!this.enabled) { handled = false; break; }
           this.focusIdx = util.indexOf(this.order, 'pause');
           this.show();
           break;

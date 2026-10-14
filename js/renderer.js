@@ -24,6 +24,7 @@
 
   function Renderer() {
     this.screen = byId('screen');
+    this.ui = byId('ui');            /* capa de controles/mensajes: hermana de #screen, con su propia geometría */
     this.stage = byId('stage');
     this.msgEl = byId('msg');
     this.hintEl = byId('hint');
@@ -34,8 +35,12 @@
     this.preloaded = null;     /* { url, img } */
     this.imageToken = 0;
     this.rotation = 0;
+    this.autoRotation = false; /* true = nadie la configuró: se elige según el tamaño de la ventana */
+    this.uiRotate = null;      /* null = la capa de controles gira igual que el escenario */
+    this.viewportOverride = null; /* { w, h } forzado por ?viewport= */
     this.aspect = 9 / 16;
     this.geometry = null;
+    this.uiGeometry = null;
     this.lastViewport = '';
     this.videoUrl = '';
   }
@@ -56,7 +61,15 @@
 
   /* ---- geometría ---- */
   Renderer.prototype.setRotation = function (deg) {
+    this.autoRotation = false;
     this.rotation = SP.rotation.normalize(deg);
+    this.layout();
+    return this.rotation;
+  };
+
+  /* Rotación automática: sigue al tamaño de la ventana (90 en pantalla horizontal, 0 en vertical). */
+  Renderer.prototype.setAutoRotation = function () {
+    this.autoRotation = true;
     this.layout();
     return this.rotation;
   };
@@ -68,6 +81,7 @@
 
   Renderer.prototype.viewportSize = function () {
     var de = global.document.documentElement;
+    if (this.viewportOverride) { return { w: this.viewportOverride.w, h: this.viewportOverride.h }; }
     return {
       w: global.innerWidth || de.clientWidth || 1280,
       h: global.innerHeight || de.clientHeight || 720
@@ -76,7 +90,9 @@
 
   Renderer.prototype.layout = function () {
     var vp = this.viewportSize();
-    var g = SP.rotation.layout(vp.w, vp.h, this.rotation, this.aspect);
+    var g, gu, uiRot;
+    if (this.autoRotation) { this.rotation = SP.rotation.defaultFor(vp.w, vp.h); }
+    g = SP.rotation.layout(vp.w, vp.h, this.rotation, this.aspect);
     util.setStyle(this.screen, {
       width: g.logicalW + 'px',
       height: g.logicalH + 'px',
@@ -91,7 +107,20 @@
       left: g.stageLeft + 'px',
       top: g.stageTop + 'px'
     });
+    /* Capa de controles: misma geometría que el escenario salvo que ?uirotate= pida otra. Va FUERA de #screen
+     * para que sus botones no dependan de lo que haga la TV con el plano de video. */
+    uiRot = this.uiRotate !== null ? this.uiRotate : this.rotation;
+    gu = uiRot === this.rotation ? g : SP.rotation.layout(vp.w, vp.h, uiRot, this.aspect);
+    util.setStyle(this.ui, {
+      width: gu.logicalW + 'px',
+      height: gu.logicalH + 'px',
+      left: gu.left + 'px',
+      top: gu.top + 'px',
+      fontSize: gu.fontPx + 'px'
+    });
+    util.setTransform(this.ui, 'rotate(' + gu.rotation + 'deg)');
     this.geometry = g;
+    this.uiGeometry = gu;
     this.lastViewport = vp.w + 'x' + vp.h;
     return g;
   };

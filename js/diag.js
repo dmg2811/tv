@@ -134,6 +134,31 @@
     guard('ident', 'screen', 'Pantalla', function () {
       row('ident', 'screen', 'Pantalla / ventana', 'info', 'screen ' + global.screen.width + 'x' + global.screen.height + ' · ventana ' + global.innerWidth + 'x' + global.innerHeight + ' · dpr ' + (global.devicePixelRatio || 1));
     });
+    guard('ident', 'orient', 'Orientación de la pantalla', function () {
+      var vw = global.innerWidth;
+      var vh = global.innerHeight;
+      var de = doc.documentElement;
+      var so = global.screen && global.screen.orientation ? global.screen.orientation : null;
+      var mq = global.matchMedia ? global.matchMedia('(orientation: portrait)').matches : null;
+      var fit = SP.rotation.fitAngles(vw, vh);
+      var info = {
+        innerWidth: vw, innerHeight: vh, clientWidth: de.clientWidth, clientHeight: de.clientHeight,
+        outerWidth: global.outerWidth, outerHeight: global.outerHeight,
+        screenWidth: global.screen.width, screenHeight: global.screen.height,
+        availWidth: global.screen.availWidth, availHeight: global.screen.availHeight,
+        dpr: global.devicePixelRatio || 1,
+        screenOrientation: so ? (so.type + ' ' + so.angle + '°') : 'n/d',
+        mediaPortrait: mq,
+        navegadorInforma: vw >= vh ? 'HORIZONTAL' : 'VERTICAL',
+        rotacionAutomatica: SP.rotation.defaultFor(vw, vh),
+        angulosUtiles: fit
+      };
+      report.extras.orientation = info;
+      row('ident', 'orient', 'Orientación de la pantalla', 'info',
+        'el navegador informa ' + info.navegadorInforma + ' (ventana ' + vw + 'x' + vh + ', pantalla ' + info.screenWidth + 'x' + info.screenHeight +
+        ', media portrait: ' + (mq === null ? 'n/d' : (mq ? 'sí' : 'no')) + ', screen.orientation: ' + info.screenOrientation + ') · el reproductor arrancaría en ' +
+        info.rotacionAutomatica + '° y ROTAR alternaría ' + fit[0] + '°/' + fit[1] + '°');
+    });
     guard('ident', 'time', 'Fecha y hora de la TV', function () {
       row('ident', 'time', 'Fecha y hora de la TV', 'info', new Date().toString());
     });
@@ -391,7 +416,7 @@
     exp = SP.rotation.physicalStageBox(vw, vh, deg, '9:16');
     okGeo = Math.abs(rect.left - exp.left) <= 3 && Math.abs(rect.top - exp.top) <= 3 && Math.abs(rect.width - exp.width) <= 3 && Math.abs(rect.height - exp.height) <= 3;
     rot.geo[deg] = okGeo;
-    util.setText($('rotInfo'), 'Ángulo ' + deg + '° · geometría ' + (okGeo ? 'OK' : 'DIFIERE de lo esperado') + ' · ¿el ARRIBA del video coincide con el rótulo rojo ARRIBA? ' + (rot.verdict[deg] === 'ok' ? '[marcado: SÍ]' : (rot.verdict[deg] === 'fail' ? '[marcado: NO]' : '[sin responder]')));
+    util.setText($('rotInfo'), 'Ángulo ' + deg + '° (útiles en esta pantalla: ' + SP.rotation.fitAngles(vw, vh).join('° y ') + '°) · geometría ' + (okGeo ? 'OK' : 'DIFIERE de lo esperado') + ' · ¿el ARRIBA del video coincide con el rótulo rojo ARRIBA? ' + (rot.verdict[deg] === 'ok' ? '[marcado: SÍ]' : (rot.verdict[deg] === 'fail' ? '[marcado: NO]' : '[sin responder]')));
     updateRotRows();
   }
 
