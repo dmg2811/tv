@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "epoch": 0,
-  "version": 5,
-  "publishedAt": "2026-10-13T22:13:10.727Z",
-  "playerBuild": "771d75ffd4",
+  "version": 6,
+  "publishedAt": "2026-10-14T16:21:53.164Z",
+  "playerBuild": "5a1978f0ad",
   "mediaBase": "media/",
   "settings": {
     "defaultImageSeconds": 10,
