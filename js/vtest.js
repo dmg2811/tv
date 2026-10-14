@@ -26,6 +26,9 @@
     3: { file: 'video-a-r90.mp4', short: 'GIRADO 90°', name: 'GIRADO 90° 1280x720 sin giro CSS', css: false },
     4: { file: 'ultra-r270.mp4', short: 'ANUNCIO REAL 270°', name: 'ANUNCIO REAL «ultra» GIRADO 270° 1280x720 sin giro CSS', css: false }
   };
+  /* Versión del anuncio del modo 4 girada 180° respecto a la normal (para TV instaladas del lado contrario).
+   * Es OTRO ARCHIVO con los píxeles girados (no CSS ni metadatos); se reproduce en el mismo contenedor que el modo 4. */
+  var FLIP_FILE = 'ultra-r90.mp4';
   var KEY_MODE = { 49: 1, 50: 2, 51: 3, 52: 4, 97: 1, 98: 2, 99: 3, 100: 4 };
   var EXIT_KEYS = { 48: 1, 96: 1, 27: 1, 8: 1, 10009: 1, 461: 1 };
 
@@ -83,9 +86,9 @@
       var tvid = global.document.createElement('video');    /* solo existe en la prueba: uso normal = un único <video> */
       var panel = byId('vtest');
       var cssVid = renderer.video;
-      var buttons = { 1: byId('vt-1'), 2: byId('vt-2'), 3: byId('vt-3'), 4: byId('vt-4'), rot: byId('vt-rot'), exit: byId('vt-0') };
-      var order = ['1', '2', '3', '4', 'rot', 'exit'];
-      var state = { mode: 0, focus: 0, hideAt: 0, sticky: true, lastX: null, lastY: null, bootAt: util.now(), box: null, reloadChecks: 0 };
+      var buttons = { 1: byId('vt-1'), 2: byId('vt-2'), 3: byId('vt-3'), 4: byId('vt-4'), flip: byId('vt-flip'), rot: byId('vt-rot'), exit: byId('vt-0') };
+      var order = ['1', '2', '3', '4', 'flip', 'rot', 'exit'];
+      var state = { mode: 0, focus: 0, hideAt: 0, sticky: true, flip: false, lastX: null, lastY: null, bootAt: util.now(), box: null, reloadChecks: 0 };
       var i;
 
       tvid.id = 'tvid';
@@ -94,6 +97,11 @@
       tvid.setAttribute('webkit-playsinline', '');
       tvid.preload = 'auto';
       tbox.appendChild(tvid);
+
+      /* Archivo del modo: el modo 4 cambia a la versión girada 180° cuando está activado GIRAR VIDEO 180°. */
+      function fileFor(n) {
+        return n === 4 && state.flip ? FLIP_FILE : MODES[n].file;
+      }
 
       function activeVideo() {
         return MODES[state.mode] && MODES[state.mode].css ? cssVid : tvid;
@@ -128,6 +136,7 @@
         for (i = 0; i < order.length; i++) {
           util.setClass(buttons[order[i]], 'focus', i === state.focus);
         }
+        util.setClass(buttons.flip, 'sel', state.flip);
         util.setText(buttons.rot, 'ROTAR PANTALLA ' + renderer.rotation + '°');
       }
 
@@ -146,7 +155,7 @@
         stopAll();
         state.mode = n;
         state.focus = n - 1;
-        url = DIR + m.file;
+        url = DIR + fileFor(n);
         if (m.css) {
           /* igual que producción: el <video> vive dentro del escenario que gira con CSS */
           tbox.style.display = 'none';
@@ -167,7 +176,7 @@
         }
         refreshButtons();
         showPanel(fromUser);
-        SP.log.info('prueba de video: modo ' + n + ' ' + m.name);
+        SP.log.info('prueba de video: modo ' + n + ' ' + m.name + (n === 4 && state.flip ? ' (girado 180°)' : ''));
       }
 
       function hud() {
@@ -177,8 +186,8 @@
         var q = null;
         var lines = [];
         try { q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : null; } catch (e) { q = null; }
-        lines.push('PRUEBA DE VIDEO · modo ' + state.mode + ' · ' + m.name);
-        lines.push('archivo ' + m.file + ' · el video mide ' + (v.videoWidth || '?') + 'x' + (v.videoHeight || '?'));
+        lines.push('PRUEBA DE VIDEO · modo ' + state.mode + ' · ' + m.name + (state.mode === 4 && state.flip ? ' · INVERTIDO 180°' : ''));
+        lines.push('archivo ' + fileFor(state.mode) + ' · el video mide ' + (v.videoWidth || '?') + 'x' + (v.videoHeight || '?'));
         lines.push('ventana ' + vp.w + 'x' + vp.h + ' · dpr ' + (global.devicePixelRatio || 1) + ' · giro de pantalla (CSS) ' + renderer.rotation + '°');
         lines.push(m.css ? 'caja del video: escenario 9:16 girado por CSS' : 'caja del video (px): ' + state.box.left + ',' + state.box.top + ' ' + state.box.width + 'x' + state.box.height + ' · sin giro CSS');
         lines.push('t ' + (v.currentTime || 0).toFixed(1) + ' s · ' + (v.paused ? 'EN PAUSA' : 'reproduciendo') + (q ? ' · cuadros perdidos ' + q.droppedVideoFrames + '/' + q.totalVideoFrames : ''));
@@ -194,8 +203,18 @@
         showPanel(true);
       }
 
+      /* GIRAR VIDEO 180°: alterna entre el anuncio del modo 4 y su versión invertida, sin recargar la página. Si se
+       * pulsa estando en otro modo, pasa al modo 4 con la versión alternada. */
+      function flipVideo() {
+        state.flip = !state.flip;
+        setMode(4, true);
+        state.focus = util.indexOf(order, 'flip');      /* el resaltado se queda en este botón: OK de nuevo alterna de regreso */
+        refreshButtons();
+      }
+
       function activate(k) {
         if (k === 'exit') { self.exit(); return; }
+        if (k === 'flip') { flipVideo(); return; }
         if (k === 'rot') { rotate(); return; }
         setMode(parseInt(k, 10), true);
       }
@@ -298,7 +317,7 @@
         setMode: setMode,
         state: function () {
           var v = activeVideo();
-          return { prueba: true, mode: state.mode, rotation: renderer.rotation, geometry: renderer.geometry, box: state.box, videoWidth: v.videoWidth, videoHeight: v.videoHeight, currentTime: v.currentTime, paused: v.paused, build: global.SP_BUILD || '' };
+          return { prueba: true, mode: state.mode, flip: state.flip, rotation: renderer.rotation, geometry: renderer.geometry, box: state.box, videoWidth: v.videoWidth, videoHeight: v.videoHeight, currentTime: v.currentTime, paused: v.paused, build: global.SP_BUILD || '' };
         }
       };
 
