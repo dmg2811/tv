@@ -104,6 +104,24 @@
       };
     },
 
+    /* Mayor rectángulo de proporción `aspect` (por defecto 16:9) que cabe en la ventana, centrado y en píxeles.
+     * Sirve para videos YA GIRADOS (archivo horizontal): se dibujan sin rotación CSS ocupando toda la pantalla,
+     * y como la caja ya tiene la proporción exacta del archivo, no se estira aunque la TV ignore object-fit. */
+    fillBox: function (vw, vh, aspect) {
+      var a = SP.rotation.parseAspect(aspect === undefined ? 16 / 9 : aspect);
+      var w = vw;
+      var h = vw / a;
+      if (h > vh) {
+        h = vh;
+        w = vh * a;
+      }
+      w = Math.floor(w);
+      h = Math.floor(h);
+      if (vw - w <= 3) { w = vw; }
+      if (vh - h <= 3) { h = vh; }
+      return { left: Math.round((vw - w) / 2), top: Math.round((vh - h) / 2), width: w, height: h };
+    },
+
     /* Caja (en px, respecto a la ventana física) que ocupa el escenario una vez girado.
      * Sirve para comprobar que nada queda fuera de pantalla. */
     physicalStageBox: function (vw, vh, deg, aspect) {

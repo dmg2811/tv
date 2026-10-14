@@ -33,6 +33,11 @@
       renderer.autoRotation = true;
     }
     renderer.init();
+    /* TEMPORAL: prueba de formatos de video en TV vertical: se abre sola en la URL pública (*.github.io); ?normal=1 abre el reproductor normal. */
+    if (SP.vtest.wanted(cfg)) {
+      SP.vtest.start(cfg, renderer);
+      return;
+    }
     renderer.message('Cargando…');
 
     function applyRotation(deg) {
@@ -85,6 +90,11 @@
       }
     };
     controls.init();
+    /* TEMPORAL: las teclas 1, 2 y 3 abren la prueba de formatos de video (la tecla 0 la cierra). */
+    util.on(global.document, 'keydown', function (e) {
+      var mode = SP.vtest.modeForKey((e || global.event).keyCode || (e || global.event).which);
+      if (mode) { SP.vtest.open(mode); }
+    });
     updater = new SP.Updater(engine, cfg, playlistAbs);
     hudOn = cfg.debug;
 

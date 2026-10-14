@@ -66,10 +66,11 @@ body.hide-cursor, body.hide-cursor * { cursor: none; }
   object-fit: contain;
 }
 
-#msg, #hint, #hud, #controls { display: none; }
+#msg, #hint, #hud, #controls, #vtest { display: none; }
 #msg.on, #hint.on { display: block; }
 #hud.on { display: block; }
 #controls.on { display: block; }
+#vtest.on { display: block; }
 
 #msg {
   position: absolute;
@@ -140,6 +141,65 @@ body.hide-cursor, body.hide-cursor * { cursor: none; }
 }
 
 #controls button.focus {
+  color: #000;
+  background: #fff;
+  border-color: #fff;
+}
+
+/* TEMPORAL (prueba de video pre-girado). #tbox: caja SIN giro CSS para un video ya girado (el JS le da el tamaño en px). */
+#tbox {
+  position: absolute;
+  display: none;
+  overflow: hidden;
+  background: #000;
+  z-index: 1;
+}
+
+#tvid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #000;
+  -o-object-fit: fill;
+  object-fit: fill;
+}
+
+#vtest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4%;
+  z-index: 10;
+  padding: 0 2%;
+  text-align: center;
+}
+
+#vtest button {
+  display: inline-block;
+  margin: 0.25em 0.3em;
+  padding: 0.7em 1.1em;
+  font: inherit;
+  font-size: 1.4em;
+  font-weight: bold;
+  color: #fff;
+  background: rgba(20, 20, 20, 0.9);
+  border: 0.12em solid #777;
+  -webkit-border-radius: 0.35em;
+  border-radius: 0.35em;
+  outline: none;
+}
+
+#vtest button.sel {
+  background: #1565c0;
+  border-color: #90caf9;
+}
+
+#vtest button.focus {
   color: #000;
   background: #fff;
   border-color: #fff;
