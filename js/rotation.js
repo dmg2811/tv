@@ -1,9 +1,9 @@
 /* Geometría de la pantalla: rotación del reproductor completo + "escenario" 9:16.
  *
- * Idea: el contenido SIEMPRE se dibuja en un escenario 9:16 (los archivos ya vienen
- * normalizados a 9:16 con barras negras), así no se depende de object-fit.
- * La rotación gira el contenedor entero; para 90/270 se intercambian ancho y alto
+ * Las IMÁGENES se dibujan en un escenario 9:16 que gira con CSS: para 90/270 se intercambian ancho y alto
  * lógicos para que, una vez girado, ocupe exactamente la pantalla física sin recortes.
+ * Los VIDEOS no giran con CSS (el plano de video por hardware de muchas Smart TV ignora el giro y estira el cuadro):
+ * en 90/270 se reproduce un archivo YA GIRADO de 1280x720 dentro de una caja 16:9 sin transformación (`fillBox`).
  * Todo se calcula en píxeles a partir del tamaño de la ventana (no vw/vh). */
 (function (global) {
   'use strict';
@@ -30,20 +30,57 @@
       return (SP.rotation.normalize(deg) + 90) % 360;
     },
 
-    /* Una pantalla horizontal (ancho >= alto) solo aprovecha el escenario 9:16 con 90 o 270; una vertical,
+    /* Una pantalla horizontal (ancho >= alto) solo aprovecha el escenario 9:16 con 270 o 90; una vertical,
      * con 0 o 180. Los otros dos ángulos dejan una franja del 32 % de la pantalla: son válidos por URL,
-     * pero nunca se ofrecen al alternar con el botón ROTAR. */
+     * pero nunca se ofrecen al alternar con el botón GIRAR 180°. El primero es el predeterminado. */
     fitAngles: function (vw, vh) {
-      return vw >= vh ? [90, 270] : [0, 180];
+      return vw >= vh ? [270, 90] : [0, 180];
     },
 
     /* Rotación cuando nadie ha configurado nada: el giro que ya aprovecha toda la pantalla.
-     * TV horizontal montada en vertical -> 90. Si la propia TV ya gira la imagen (navegador vertical) -> 0. */
+     * TV horizontal montada en vertical -> 270. Si la propia TV ya gira la imagen (navegador vertical) -> 0. */
     defaultFor: function (vw, vh) {
-      return vw >= vh ? 90 : 0;
+      return vw >= vh ? 270 : 0;
     },
 
-    /* Siguiente ángulo "útil" para el botón ROTAR: alterna entre los dos que llenan la pantalla.
+    /* Reproductores anteriores que, sin nada guardado, mostraban la pantalla HORIZONTAL a 90° (ángulo automático). Solo uno: 5a1978f0ad (14-oct).
+     * El primero (771d75ffd4) mostraba 0°; los de prueba (2fe066e704, 2fc733c499, ca3aa9cf36) no reproducían la programación. */
+    LEGACY_AUTO90_BUILDS: ['5a1978f0ad'],
+
+    /* Ángulo (90) que ESTA TV mostraba con el reproductor anterior sin haber guardado ninguna preferencia, o null si no hay PRUEBA de ello.
+     * Solo se llama en la primera ejecución de este reproductor en la TV, cuando no hay preferencia guardada ni ?rotate=.
+     *   saved    lo que el reproductor anterior dejó en 'lastPlaylist' ({ url, raw }); raw.playerBuild = build que anunciaba el último manifiesto que aplicó.
+     *   ownBuild el build de ESTE reproductor (SP_BUILD).
+     *   viaBuild el parámetro `_b` de la URL: los reproductores anteriores en marcha, al aplicar un manifiesto que anuncia otro build, lo guardan en
+     *            'lastPlaylist' y recargan la página con ?_b=<build nuevo>.
+     * Hay prueba en dos casos y solo con pantalla horizontal (ahí el automático anterior era 90°; en una vertical era 0°, igual que el predeterminado actual):
+     *   (1) DATO GUARDADO: el último manifiesto aplicado anunciaba un build de LEGACY_AUTO90_BUILDS (TV que se reinició y ya no tiene el reproductor en marcha).
+     *   (2) ACTUALIZACIÓN AUTOMÁTICA: lo que hay guardado anuncia ESTE build y la URL trae _b=<este build>: me cargó un reproductor anterior con motor en marcha, que
+     *       acababa de sobrescribir 'lastPlaylist' con el manifiesto nuevo (la prueba (1) ya no existe). Desde el 14-oct 10:23 el único reproductor anterior con motor
+     *       que puede seguir en marcha es 5a1978f0ad: el 771d75ffd4 pasa a 5a1978f0ad en su primer sondeo (el manifiesto v0.6 anuncia ese build).
+     * Cualquier otra cosa (sin datos, datos raros, otro build, sin _b) → null: no se supone nada. */
+    inheritedAngle: function (vw, vh, saved, ownBuild, viaBuild) {
+      var raw, build, i, list;
+      if (!(typeof vw === 'number' && typeof vh === 'number' && vw >= vh)) { return null; }
+      raw = saved && typeof saved === 'object' ? saved.raw : null;
+      if (!raw || typeof raw !== 'object') { return null; }
+      build = raw.playerBuild;
+      if (typeof build !== 'string' || build === '') { return null; }
+      list = SP.rotation.LEGACY_AUTO90_BUILDS;
+      for (i = 0; i < list.length; i++) {
+        if (list[i] === build) { return 90; }
+      }
+      if (typeof ownBuild === 'string' && ownBuild !== '' && build === ownBuild && viaBuild === ownBuild) { return 90; }
+      return null;
+    },
+
+    /* ¿Con este giro los videos usan el archivo YA GIRADO (sin giro CSS)? Solo con 90 y 270. */
+    usesPreRotated: function (deg) {
+      var d = SP.rotation.normalize(deg);
+      return d === 90 || d === 270;
+    },
+
+    /* Siguiente ángulo "útil" para el botón GIRAR 180°: alterna entre los dos que llenan la pantalla.
      * Si el actual no es uno de ellos (p. ej. 0 por URL en una pantalla horizontal), salta al primero. */
     nextFit: function (deg, vw, vh) {
       var fit = SP.rotation.fitAngles(vw, vh);

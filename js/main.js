@@ -14,17 +14,38 @@
   function start() {
     var cfg = SP.config.build(global.location.search);
     var renderer = new SP.Renderer();
-    var storedRot = SP.store.get('rotation', null);
+    /* La orientación de esta TV se recuerda en localStorage y, por si la TV lo vacía, también en una cookie. */
+    var storedRot = SP.store.getDurable('rotation', null);
     var rotationLocked = cfg.rotate !== null || storedRot !== null;
+    var rotationSource = cfg.rotate !== null ? 'url' : (storedRot !== null ? 'guardada' : 'automática');
     var playlistAbs = absoluteUrl(cfg.playlistUrl);
+    var vpStart, inherited = null;
     var engine, controls, updater, hudOn, lastHudAt = 0, lastLayoutAt = 0, bootMsgShown = false, bootedAt = util.now();
     var hooks, last, saved, res;
 
     SP.log.setEcho(cfg.debug);
     renderer.viewportOverride = cfg.viewport;
     renderer.uiRotate = cfg.uiRotate;
-    /* Prioridad: ?rotate= de la URL > elección guardada con ROTAR > valor por defecto del manifiesto >
-     * automática (90 en pantalla horizontal, que es una TV instalada en vertical; 0 en pantalla vertical). */
+    /* PRIMERA ejecución de este reproductor en esta TV: si no había ninguna preferencia guardada pero hay PRUEBA de que el reproductor anterior la mostraba
+     * con su ángulo automático de 90° (ver SP.rotation.inheritedAngle: dato guardado, o actualización automática desde el reproductor anterior en marcha),
+     * se conserva ese 90° y se guarda: la TV no cambia de orientación sin que nadie lo haya pedido. La decisión se toma UNA sola vez (marca 'orientationChecked'), antes de que este reproductor escriba nada en 'lastPlaylist':
+     * si no, lo que él mismo guarde (p. ej. un manifiesto que aún anuncie el build anterior) pasaría por «prueba». Con ?rotate= en la URL no se asigna nada. */
+    if (!SP.store.get('orientationChecked', false)) {
+      SP.store.set('orientationChecked', true);
+      if (storedRot === null && cfg.rotate === null) {
+        vpStart = renderer.viewportSize();
+        inherited = SP.rotation.inheritedAngle(vpStart.w, vpStart.h, SP.store.get('lastPlaylist', null), global.SP_BUILD || '', util.parseQuery(global.location.search)._b || null);
+        if (inherited !== null) {
+          SP.store.setDurable('rotation', inherited);
+          storedRot = inherited;
+          rotationLocked = true;
+          rotationSource = 'heredada';
+          SP.log.info('orientación ' + inherited + '° heredada del reproductor anterior (esta TV la mostraba con el ángulo automático)');
+        }
+      }
+    }
+    /* Prioridad: ?rotate= de la URL > elección guardada con GIRAR 180° > valor por defecto del manifiesto >
+     * automática (270 en pantalla horizontal, que es una TV instalada en vertical; 0 en pantalla vertical). */
     if (cfg.rotate !== null) {
       renderer.rotation = cfg.rotate;
     } else if (storedRot !== null) {
@@ -33,17 +54,14 @@
       renderer.autoRotation = true;
     }
     renderer.init();
-    /* TEMPORAL: prueba de formatos de video en TV vertical: se abre sola en la URL pública (*.github.io); ?normal=1 abre el reproductor normal. */
-    if (SP.vtest.wanted(cfg)) {
-      SP.vtest.start(cfg, renderer);
-      return;
-    }
     renderer.message('Cargando…');
 
     function applyRotation(deg) {
       var r = renderer.setRotation(deg);
       rotationLocked = true;
-      SP.store.set('rotation', r);
+      rotationSource = 'guardada';
+      SP.store.setDurable('rotation', r);
+      if (engine) { engine.rotationChanged(); }
       if (controls) { controls.refresh(); }
       SP.log.info('rotación ' + r + '°');
     }
@@ -51,7 +69,7 @@
     hooks = {
       onApplied: function (pl) {
         renderer.setAspect(pl.aspect);
-        if (!rotationLocked && pl.rotation !== null) { renderer.setRotation(pl.rotation); }
+        if (!rotationLocked && pl.rotation !== null) { renderer.setRotation(pl.rotation); rotationSource = 'manifiesto'; }
         if (pl.raw) { SP.store.set('lastPlaylist', { url: playlistAbs, raw: pl.raw }); }
       },
 
@@ -90,11 +108,6 @@
       }
     };
     controls.init();
-    /* TEMPORAL: las teclas 1, 2 y 3 abren la prueba de formatos de video (la tecla 0 la cierra). */
-    util.on(global.document, 'keydown', function (e) {
-      var mode = SP.vtest.modeForKey((e || global.event).keyCode || (e || global.event).which);
-      if (mode) { SP.vtest.open(mode); }
-    });
     updater = new SP.Updater(engine, cfg, playlistAbs);
     hudOn = cfg.debug;
 
@@ -111,6 +124,7 @@
           engine: engine.getState(),
           updater: updater.getState(),
           rotation: renderer.rotation,
+          rotationSource: rotationSource,
           geometry: renderer.geometry,
           storePersistent: SP.store.isPersistent(),
           build: global.SP_BUILD || ''
@@ -172,7 +186,7 @@
       lines.push(s.kind === 'video' ? ('video ' + s.videoTime.toFixed(1) + ' s') : ('imagen ' + Math.round(s.elapsedMs / 1000) + '/' + Math.round(s.durationMs / 1000) + ' s'));
       lines.push('lista ' + s.version + (s.pendingVersion ? ' (pend ' + s.pendingVersion + ')' : '') + '  fallos seguidos ' + s.consecutiveFailures);
       lines.push('upd: ' + (u.lastOkAt ? Math.round((now - u.lastOkAt) / 1000) + ' s' : 'nunca') + '  err x' + u.failures + (u.lastReject ? '  rechazo: ' + u.lastReject : ''));
-      lines.push('rot ' + renderer.rotation + '  sonido ' + (s.soundOn ? 'sí' : 'no') + '  almacén ' + (SP.store.isPersistent() ? 'persistente' : 'memoria') + '  red ' + (global.navigator.onLine === false ? 'OFFLINE' : 'ok') + '  mem ' + mem);
+      lines.push('rot ' + renderer.rotation + ' (' + rotationSource + ')' + (s.kind === 'video' ? ' video ' + (s.videoInBox ? 'v' + s.videoVariant + '° caja16:9' : 'normal+CSS') : '') + '  sonido ' + (s.soundOn ? 'sí' : 'no') + '  almacén ' + (SP.store.isPersistent() ? 'persistente' : 'memoria') + '  red ' + (global.navigator.onLine === false ? 'OFFLINE' : 'ok') + '  mem ' + mem);
       lines.push('ok:' + s.stats.started + ' fallo:' + s.stats.failed + ' salto:' + s.stats.skipped + ' reint:' + s.stats.retries + ' atasco:' + s.stats.stalls + ' respaldo:' + s.stats.fallbacks + ' recup:' + s.stats.recoveries + ' upd:' + s.stats.updatesApplied);
       return lines.concat(SP.log.tail(5)).join('\n');
     }

@@ -1,4 +1,10 @@
-/* Superficie de reproducción: escenario girado, 2 capas <img> y UN solo <video>.
+/* Superficie de reproducción: escenario girado para las imágenes, caja 16:9 sin giro para los videos ya girados,
+ * 2 capas <img> y UN solo <video>.
+ *
+ * Dos superficies, nunca mezcladas:
+ *  - «escenario» (#screen > #stage): 9:16 girado con CSS. Lleva las imágenes y, si no hay versión girada, el video (modo antiguo).
+ *  - «caja» (#vbox): rectángulo 16:9 sin transformación que llena la pantalla; lleva el video cuando el archivo YA viene girado
+ *    (1280x720). El plano de video por hardware de muchas Smart TV ignora el giro CSS, así que el giro está en los píxeles.
  *
  * Consumo mínimo de memoria:
  *  - Un único elemento <video> reutilizado (las TV suelen tener un solo decodificador por hardware).
@@ -29,6 +35,7 @@
     this.msgEl = byId('msg');
     this.hintEl = byId('hint');
     this.hudEl = byId('hud');
+    this.vbox = byId('vbox');         /* caja 16:9 sin giro para videos ya girados */
     this.video = byId('vid');
     this.imgs = [byId('imgA'), byId('imgB')];
     this.front = 0;            /* índice de la <img> visible */
@@ -43,6 +50,9 @@
     this.uiGeometry = null;
     this.lastViewport = '';
     this.videoUrl = '';
+    this.videoInBox = true;    /* en cuál de las dos superficies está (o va a estar) el único <video> */
+    this.surface = 'stage';    /* superficie visible: 'stage' (imágenes) | 'box' (video ya girado) */
+    this.vboxGeometry = null;
   }
 
   Renderer.prototype.init = function () {
@@ -119,10 +129,34 @@
       fontSize: gu.fontPx + 'px'
     });
     util.setTransform(this.ui, 'rotate(' + gu.rotation + 'deg)');
+    /* Caja del video ya girado: 16:9 en píxeles, centrada, SIN transformación. Su proporción es la del archivo, así que
+     * no se deforma aunque la TV ignore object-fit. */
+    this.vboxGeometry = SP.rotation.fillBox(vp.w, vp.h, 16 / 9);
+    util.setStyle(this.vbox, {
+      left: this.vboxGeometry.left + 'px',
+      top: this.vboxGeometry.top + 'px',
+      width: this.vboxGeometry.width + 'px',
+      height: this.vboxGeometry.height + 'px'
+    });
     this.geometry = g;
     this.uiGeometry = gu;
     this.lastViewport = vp.w + 'x' + vp.h;
     return g;
+  };
+
+  /* Muestra una superficie y oculta la otra. */
+  Renderer.prototype.setSurface = function (kind) {
+    this.surface = kind;
+    this.vbox.style.display = kind === 'box' ? 'block' : 'none';
+    this.vbox.style.visibility = 'visible';
+    this.screen.style.display = kind === 'box' ? 'none' : 'block';
+  };
+
+  /* Pone el único <video> en la superficie que toca. Solo se mueve entre un video y el siguiente. */
+  Renderer.prototype.placeVideo = function (inBox) {
+    var host = inBox ? this.vbox : this.stage;
+    this.videoInBox = !!inBox;
+    if (this.video.parentNode !== host) { host.appendChild(this.video); }
   };
 
   /* ---- imágenes ---- */
@@ -142,6 +176,7 @@
         cb(err);
         return;
       }
+      self.setSurface('stage');
       back.style.visibility = 'visible';
       clearImg(self.imgs[self.front]);
       self.front = backIdx;
@@ -179,8 +214,16 @@
   };
 
   /* ---- video ---- */
-  Renderer.prototype.loadVideo = function (url, muted) {
+  /* inBox=true: el archivo ya viene girado → caja 16:9 sin giro. Si no, el video va en el escenario girado con CSS (modo antiguo). */
+  Renderer.prototype.loadVideo = function (url, muted, inBox) {
     var v = this.video;
+    this.placeVideo(inBox);
+    /* Mientras carga, la caja ya existe (algunas TV no decodifican un <video> dentro de un contenedor display:none) pero es
+     * invisible: lo que hubiera en pantalla se queda hasta que el video tenga imagen (showVideo). */
+    if (inBox) {
+      this.vbox.style.display = 'block';
+      this.vbox.style.visibility = 'hidden';
+    }
     this.videoUrl = url;
     v.muted = !!muted;
     v.defaultMuted = !!muted;
@@ -191,6 +234,7 @@
 
   Renderer.prototype.showVideo = function () {
     var i;
+    this.setSurface(this.videoInBox ? 'box' : 'stage');
     this.video.style.visibility = 'visible';
     /* la imagen anterior ya no se necesita */
     for (i = 0; i < this.imgs.length; i++) { clearImg(this.imgs[i]); }
@@ -215,6 +259,7 @@
   /* Deja el escenario en negro y libera imágenes, video y precarga. */
   Renderer.prototype.clearStage = function () {
     this.imageToken++;
+    this.setSurface('stage');
     this.releasePreload();
     clearImg(this.imgs[0]);
     clearImg(this.imgs[1]);

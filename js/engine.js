@@ -8,7 +8,9 @@
  *  - Tiempo acumulado con dt acotado: un salto del reloj del sistema no altera las duraciones.
  *  - Un fallo se reintenta `retries` veces; luego se muestra el respaldo (si existe) o se salta.
  *  - Si TODOS los elementos fallan seguidos -> modo recovering con esperas crecientes (backoff).
- *  - Las programaciones nuevas se aplican solo entre elementos, nunca a mitad de uno. */
+ *  - Las programaciones nuevas se aplican solo entre elementos, nunca a mitad de uno.
+ *  - Un video se reproduce en su versión YA GIRADA (270 o 90) dentro de la caja 16:9 sin giro CSS cuando la pantalla gira 90/270
+ *    y el manifiesto la trae; si no la trae, se reproduce el video normal girado con CSS (comportamiento anterior). */
 (function (global) {
   'use strict';
 
@@ -69,6 +71,9 @@
       itemId: e ? e.item.id : null,
       kind: e ? e.kind : null,
       isFallback: !!(e && e.isFallback),
+      videoVariant: e && e.kind === 'video' ? e.variant : 0,
+      videoInBox: e && e.kind === 'video' ? !!e.box : false,
+      videoUrl: e && e.kind === 'video' ? e.url : null,
       phase: e ? e.phase : null,
       attempt: e ? e.attempt : 0,
       elapsedMs: e ? Math.round(e.elapsedMs) : 0,
@@ -155,14 +160,45 @@
     this.mode = 'active';
     this.index = ((index % n) + n) % n;
     item = this.items[this.index];
-    this.startEntry({
+    this.startEntry(this.entryFor(item));
+  };
+
+  /* Qué archivo reproducir de un video según el giro actual de la pantalla.
+   *  · giro 90/270 y el manifiesto trae esa versión → el archivo YA GIRADO, en la caja 16:9 sin giro CSS.
+   *  · en cualquier otro caso → el video normal (vertical), en el escenario girado con CSS (comportamiento anterior). */
+  Engine.prototype.videoPlan = function (item) {
+    var rot = this.renderer.rotation;
+    var v = item.variants;
+    if (SP.rotation.usesPreRotated(rot) && v && v[rot]) { return { url: v[rot].url, box: true, variant: rot }; }
+    return { url: item.url, box: false, variant: 0 };
+  };
+
+  Engine.prototype.entryFor = function (item) {
+    var plan = item.type === 'video' ? this.videoPlan(item) : null;
+    return {
       item: item,
       kind: item.type,
-      url: item.url,
+      url: plan ? plan.url : item.url,
+      box: plan ? plan.box : false,
+      variant: plan ? plan.variant : 0,
       durationMs: item.type === 'image' ? item.durationSec * 1000 : 0,
       isFallback: false,
       attempt: 0
-    });
+    };
+  };
+
+  /* El usuario giró la pantalla (GIRAR 180°). Las imágenes solo se redibujan; un video en curso se reinicia en la versión
+   * que corresponde al nuevo giro. Devuelve true si se reinició. */
+  Engine.prototype.rotationChanged = function () {
+    var e = this.current;
+    var plan;
+    if (this.mode !== 'active' || !e || e.kind !== 'video' || e.isFallback || e.phase === 'done') { return false; }
+    plan = this.videoPlan(e.item);
+    if (plan.url === e.url && plan.box === e.box) { return false; }
+    SP.log.info('giro de pantalla: se reinicia ' + e.item.id + ' con ' + (plan.box ? 'su versión de ' + plan.variant + '°' : 'el video normal'));
+    this.renderer.unloadVideo();
+    this.startEntry(this.entryFor(e.item));
+    return true;
   };
 
   /* Fin natural de un elemento. */
@@ -217,7 +253,7 @@
         if (err) { self.entryFailed(entry, 'image-error'); } else { self.entryStarted(entry, false); }
       });
     } else {
-      this.renderer.loadVideo(this.urlFor(entry), !(this.soundWanted && this.gesture));
+      this.renderer.loadVideo(this.urlFor(entry), !(this.soundWanted && this.gesture), !!entry.box);
     }
   };
 

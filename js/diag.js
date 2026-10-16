@@ -157,7 +157,7 @@
       row('ident', 'orient', 'Orientación de la pantalla', 'info',
         'el navegador informa ' + info.navegadorInforma + ' (ventana ' + vw + 'x' + vh + ', pantalla ' + info.screenWidth + 'x' + info.screenHeight +
         ', media portrait: ' + (mq === null ? 'n/d' : (mq ? 'sí' : 'no')) + ', screen.orientation: ' + info.screenOrientation + ') · el reproductor arrancaría en ' +
-        info.rotacionAutomatica + '° y ROTAR alternaría ' + fit[0] + '°/' + fit[1] + '°');
+        info.rotacionAutomatica + '° y GIRAR 180° alternaría ' + fit[0] + '°/' + fit[1] + '°');
     });
     guard('ident', 'time', 'Fecha y hora de la TV', function () {
       row('ident', 'time', 'Fecha y hora de la TV', 'info', new Date().toString());

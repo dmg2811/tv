@@ -3,7 +3,8 @@
  * Parámetros (todos opcionales; los tiempos son en SEGUNDOS):
  *   playlist=URL     manifiesto (por defecto playlist.json junto a index.html)
  *   rotate=0|90|180|270   rotación de pantalla de ESTA tv (gana sobre lo guardado). Sin él ni valor guardado:
- *                    90 en una pantalla horizontal (TV instalada en vertical) y 0 en una vertical
+ *                    270 en una pantalla horizontal (TV instalada en vertical) y 0 en una vertical. Con 90 o 270 los videos
+ *                    se reproducen en su versión YA GIRADA (sin giro CSS); el botón GIRAR 180° alterna 270 <-> 90 y lo recuerda
  *   mute=0|1         sonido solicitado al arrancar (requiere gesto del usuario)
  *   poll=N           intervalo de consulta del manifiesto (por defecto 60)
  *   loadTimeout=N    tiempo máximo para empezar a reproducir un elemento (20)
@@ -13,9 +14,6 @@
  *   hide=N           segundos hasta ocultar los controles (4)
  *   controls=0       nunca mostrar los botones en pantalla (las teclas del control siguen funcionando)
  *   uirotate=0|90|180|270   gira los controles aparte del escenario (por defecto igual que rotate)
- *   prueba=video     TEMPORAL: prueba de formatos de video en TV vertical (modo=1|2|3|4; o teclas 1 a 4).
- *                    En la URL pública de GitHub Pages la prueba se abre SOLA, sin parámetros.
- *   normal=1         TEMPORAL: abre el reproductor normal (programación) en vez de la prueba
  *   viewport=WxH     fuerza el tamaño de pantalla (p. ej. 1920x1080) si el navegador de la TV informa mal
  *   backoff=a,b,c    esperas de recuperación cuando todo falla (10,20,40,60,120,300)
  *   preload=image|none   precarga del siguiente elemento (image)
@@ -105,11 +103,6 @@
         uiRotate: uiRotate,
         viewport: viewport,
         controls: q.controls !== '0',
-        /* TEMPORAL: prueba de formatos de video en TV vertical (?prueba=video&modo=1|2|3) */
-        prueba: q.prueba === 'video',
-        normal: q.normal === '1',
-        vcheckMs: num(q, 'vcheck', 60, 1, 3600) * 1000,
-        modo: Math.floor(num(q, 'modo', 1, 1, 4)),
         wantSound: q.mute === '0',
         tickMs: d.tickMs
       };

@@ -128,17 +128,24 @@
     var self = this;
     var known = {};
     var todo = [];
-    var i, j, it, urls, u;
+    var i, j, it, urls, u, v;
     var origin = util.originOf(this.playlistAbs);
     var cur = this.engine.items || [];
 
     /* Sin programación vigente (arranque en frío) no hay nada que proteger: se aplica directamente. */
     if (!this.cfg.verify || !this.engine.playlist) { cb(true); return; }
-    for (i = 0; i < cur.length; i++) { known[cur[i].url] = true; }
+    for (i = 0; i < cur.length; i++) {
+      known[cur[i].url] = true;
+      if (cur[i].variants && cur[i].variants[270]) { known[cur[i].variants[270].url] = true; }
+      if (cur[i].variants && cur[i].variants[90]) { known[cur[i].variants[90].url] = true; }
+    }
 
     for (i = 0; i < pl.items.length; i++) {
       it = pl.items[i];
       urls = [{ url: it.url, size: it.size }];
+      /* las versiones ya giradas de un video: la que usa esta TV según su giro actual (la otra la verificó la publicación) */
+      v = it.variants && this.engine.renderer ? it.variants[this.engine.renderer.rotation] : null;
+      if (v) { urls.push({ url: v.url, size: v.size }); }
       if (it.fallback) { urls.push({ url: it.fallback.url, size: null }); }
       for (j = 0; j < urls.length; j++) {
         u = urls[j];

@@ -141,7 +141,7 @@
     if (this.visible && nowMs >= this.hideAtMs) { this.hide(); }
   };
 
-  /* ROTAR alterna solo entre los dos ángulos que llenan la pantalla (90 <-> 270 en una pantalla horizontal,
+  /* GIRAR 180° alterna solo entre los dos ángulos que llenan la pantalla (270 <-> 90 en una pantalla horizontal,
    * 0 <-> 180 en una vertical); los demás se pueden fijar por URL. */
   Controls.prototype.nextRotation = function () {
     var vp = this.renderer.viewportSize();
@@ -153,7 +153,7 @@
     var name, i, focused;
     util.setText(this.buttons.pause, st.paused ? 'REANUDAR' : 'PAUSA');
     util.setText(this.buttons.sound, 'SONIDO: ' + (st.soundOn ? 'SÍ' : 'NO'));
-    util.setText(this.buttons.rotate, 'ROTAR A ' + this.nextRotation() + '°');
+    util.setText(this.buttons.rotate, 'GIRAR 180°');
     util.setText(this.buttons.fullscreen, this.isFullscreen() ? 'SALIR PANT. COMPLETA' : 'PANTALLA COMPLETA');
     for (i = 0; i < this.order.length; i++) {
       name = this.order[i];

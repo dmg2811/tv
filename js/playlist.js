@@ -6,7 +6,11 @@
  *     settings:{ defaultImageSeconds:10, pollSeconds:60, rotation:0, stageAspect:"9:16",
  *                fallback:{ url:"respaldo.jpg", durationSec:5 } },
  *     items:[ { id, type:"image"|"video", url, durationSec?, order?, status?:"active",
- *              size?, fallback?:{ url, durationSec? } } ] }
+ *              size?, fallback?:{ url, durationSec? },
+ *              variants?:{ r270:{ url, size? }, r90:{ url, size? } } } ] }
+ *
+ * `variants` (solo videos): las dos versiones YA GIRADAS (1280x720) para TV horizontales montadas en vertical. Un reproductor
+ * antiguo las ignora y sigue usando `url`. Un video puede traer solo una; la otra se tratará como ausente.
  *
  * Reglas: (epoch, version) decide qué manifiesto es más nuevo. Un manifiesto inválido se
  * rechaza entero; un elemento inválido se descarta y se informa, el resto sigue. */
@@ -42,6 +46,34 @@
       url: mediaUrl(playlistAbs, mediaBase, raw.url),
       durationSec: util.clamp(sec, 1, 3600)
     };
+  }
+
+  /* variants del manifiesto -> { 270:{url,size}, 90:{url,size} } o null si no hay ninguna válida. */
+  function normalizeVariants(raw, playlistAbs, mediaBase, id, warnings) {
+    var out = {};
+    var any = false;
+    var keys = ['r270', 'r90'];
+    var i, v, url;
+    if (raw === undefined || raw === null) { return null; }
+    if (typeof raw !== 'object' || util.isArray(raw)) {
+      warnings.push(id + ': variants no es un objeto (se ignora)');
+      return null;
+    }
+    for (i = 0; i < keys.length; i++) {
+      v = raw[keys[i]];
+      if (v === undefined || v === null) { continue; }
+      url = typeof v === 'string' ? v : str(v.url);
+      if (!url) {
+        warnings.push(id + ': variante ' + keys[i] + ' sin url (se ignora)');
+        continue;
+      }
+      out[keys[i].substring(1)] = {
+        url: mediaUrl(playlistAbs, mediaBase, url),
+        size: typeof v === 'object' && util.isNumber(v.size) && v.size > 0 ? v.size : null
+      };
+      any = true;
+    }
+    return any ? out : null;
   }
 
   SP.playlist = {
@@ -101,7 +133,8 @@
           order: order,
           pos: i,
           size: util.isNumber(it.size) && it.size > 0 ? it.size : null,
-          fallback: type === 'video' ? (normalizeFallback(it.fallback, playlistAbs, mediaBase, 5) || fallbackDefault) : null
+          fallback: type === 'video' ? (normalizeFallback(it.fallback, playlistAbs, mediaBase, 5) || fallbackDefault) : null,
+          variants: type === 'video' ? normalizeVariants(it.variants, playlistAbs, mediaBase, id, warnings) : null
         };
         out.push(entry);
       }
@@ -146,7 +179,8 @@
       if (!pl) { return ''; }
       for (i = 0; i < pl.items.length; i++) {
         it = pl.items[i];
-        parts.push(it.id + '|' + it.url + '|' + it.durationSec + '|' + (it.fallback ? it.fallback.url : ''));
+        parts.push(it.id + '|' + it.url + '|' + it.durationSec + '|' + (it.fallback ? it.fallback.url : '') + '|' +
+          (it.variants ? (it.variants[270] ? it.variants[270].url : '') + '|' + (it.variants[90] ? it.variants[90].url : '') : ''));
       }
       return parts.join(';');
     }
